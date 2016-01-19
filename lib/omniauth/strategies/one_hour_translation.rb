@@ -26,9 +26,9 @@ module OmniAuth
     class OneHourTranslation < OmniAuth::Strategies::OAuth2
 
       option :client_options, {
-        :site           => 'https://api.onehourtranslation.com',
-        :authorize_url  => 'https://api.onehourtranslation.com/oauth/authorize',
-        :token_url      => 'https://api.onehourtranslation.com/oauth/token'
+        :site           => 'https://sandbox6.onehourtranslation.com/api',
+        :authorize_url  => 'https://sandbox6.onehourtranslation.com/oauth/authorize',
+        :token_url      => 'https://sandbox6.onehourtranslation.com/oauth/access'
       }
 
       option :name, 'onehourtranslation'
@@ -63,7 +63,7 @@ module OmniAuth
       end
       
       def raw_info
-        @raw_info ||= access_token.get('/v1/users/me').parsed
+        @raw_info ||= access_token.get('/v2/account').parsed
       end
 
       def authorize_params
