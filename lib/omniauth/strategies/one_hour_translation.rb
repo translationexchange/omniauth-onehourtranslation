@@ -25,6 +25,8 @@ module OmniAuth
   module Strategies
     class OneHourTranslation < OmniAuth::Strategies::OAuth2
 
+      attr_accessor :user_uuid
+
       option :client_options, {
         :site           => 'https://sandbox6.onehourtranslation.com/api',
         :authorize_url  => 'https://sandbox6.onehourtranslation.com/oauth/authorize',
@@ -37,11 +39,21 @@ module OmniAuth
         :header_format => 'OAuth %s',
         :param_name => 'access_token'
       }
-      
-      option :authorize_options, [:scope, :display]
 
       def request_phase
-        super
+        redirect client.auth_code.authorize_url({:return_endpoint => callback_url}.merge(authorize_params))
+      end
+
+      def authorize_params
+        super.tap do |params|
+          params.merge!(:partner_uuid => options.client_id)
+        end
+      end
+
+      def build_access_token
+        verifier = request.params['authorization_token']
+        self.user_uuid = request.params['user_uuid']
+        client.auth_code.get_token(verifier, {:return_endpoint => callback_url}.merge(token_params.to_hash(:symbolize_keys => true)), deep_symbolize(options.auth_token_params))
       end
 
       uid { raw_info['id'] }
@@ -63,14 +75,7 @@ module OmniAuth
       end
       
       def raw_info
-        @raw_info ||= access_token.get('/v2/account').parsed
-      end
-
-      def authorize_params
-        super.tap do |params|
-          params.merge!(:display => request.params['display']) if request.params['display']
-          params.merge!(:state => request.params['state']) if request.params['state']
-        end
+        @raw_info ||= access_token.get("/v2/account?user_uuid=#{user_uuid}").parsed
       end
 
       private
