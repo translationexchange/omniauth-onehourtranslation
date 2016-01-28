@@ -30,7 +30,7 @@ module OmniAuth
       option :client_options, {
         :site           => 'https://sandbox6.onehourtranslation.com/api',
         :authorize_url  => 'https://sandbox6.onehourtranslation.com/oauth/authorize',
-        :token_url      => 'https://sandbox6.onehourtranslation.com/oauth/access'
+        :token_url      => 'https://sandbox6.onehourtranslation.com/api/2/oauth/token'
       }
 
       option :name, 'onehourtranslation'
@@ -40,33 +40,37 @@ module OmniAuth
         :param_name => 'access_token'
       }
 
-      def request_phase
-        redirect client.auth_code.authorize_url({:return_endpoint => callback_url}.merge(authorize_params))
-      end
-
-      def authorize_params
-        super.tap do |params|
-          params.merge!(:partner_uuid => options.client_id)
-        end
-      end
+      # def request_phase
+      #   redirect client.auth_code.authorize_url(authorize_params)
+      # end
+      #
+      # def authorize_params
+      #   super.tap do |params|
+      #     params.merge!(:partner_uuid => options.client_id)
+      #   end
+      # end
 
       def build_access_token
-        verifier = request.params['authorization_token']
         self.user_uuid = request.params['user_uuid']
-        client.auth_code.get_token(verifier, {:return_endpoint => callback_url}.merge(token_params.to_hash(:symbolize_keys => true)), deep_symbolize(options.auth_token_params))
+
+        params = {
+          :user_uuid => user_uuid,
+          :public_key => options['public_key'],
+          :secret_key => options['secret_key']
+        }
+
+        params = params.merge(token_params.to_hash(:symbolize_keys => true))
+        client.auth_code.get_token(request.params['code'], params, deep_symbolize(options.auth_token_params))
       end
 
       uid { raw_info['id'] }
       
       info do
         prune!({
-          'id'             => raw_info['id'],
-          'display_name'   => raw_info['display_name'],
+          'id'             => raw_info['user_uuid'],
           'first_name'     => raw_info['first_name'],
           'last_name'      => raw_info['last_name'],
-          'email'          => raw_info['email'],
-          'gender'         => raw_info['gender'],
-          'mugshot'        => raw_info['mugshot']
+          'email'          => raw_info['email']
         })
       end
       
@@ -75,7 +79,15 @@ module OmniAuth
       end
       
       def raw_info
-        @raw_info ||= access_token.get("/v2/account?user_uuid=#{user_uuid}").parsed
+        @raw_info ||= begin
+          params = {
+              :user_uuid => user_uuid,
+              :public_key => options['public_key'],
+              :secret_key => options['secret_key']
+          }.each{|key, value|  "#{key}=#{value}" }.join('&')
+          access_token.get("/v2/account?#{params}").parsed
+        end
+
       end
 
       private
