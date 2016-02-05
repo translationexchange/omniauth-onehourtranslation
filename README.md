@@ -24,7 +24,10 @@ Here's a quick example, adding the middleware to a Rails app in `config/initiali
 
 ```ruby
 Rails.application.config.middleware.use OmniAuth::Builder do
-  provider :onehourtranslation, ENV['ONE_HOUR_TRANSLATION_KEY'], ENV['ONE_HOUR_TRANSLATION_SECRET']
+  provider :onehourtranslation, ENV['ONE_HOUR_TRANSLATION_PARTNER_UUID'], {
+      :public_key => ENV['ONE_HOUR_TRANSLATION_PUBLIC_KEY'],
+      :secret_key => ENV['ONE_HOUR_TRANSLATION_SECRET_KEY']
+  }
 end
 ```
 
@@ -39,7 +42,11 @@ For example, to request `email` permission and display the authorization page in
  
 ```ruby
 Rails.application.config.middleware.use OmniAuth::Builder do
-  provider :onehourtranslation, ENV['ONE_HOUR_TRANSLATION_KEY'], ENV['ONE_HOUR_TRANSLATION_SECRET'], :scope => 'email', :display => 'mobile'
+  provider :onehourtranslation, ENV['ONE_HOUR_TRANSLATION_KEY'], {
+      :public_key => ENV['ONE_HOUR_TRANSLATION_PUBLIC_KEY'],
+      :secret_key => ENV['ONE_HOUR_TRANSLATION_SECRET_KEY'],
+      :scope => 'email', :display => 'mobile'
+  }
 end
 ```
 

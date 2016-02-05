@@ -25,10 +25,10 @@ module OmniAuth
   module Strategies
     class OneHourTranslation < OmniAuth::Strategies::OAuth2
 
-      attr_accessor :user_uuid
+      attr_accessor :account_uuid
 
       option :client_options, {
-        :site           => 'https://sandbox6.onehourtranslation.com/api',
+        :site           => 'https://sandbox6.onehourtranslation.com/api/2/',
         :authorize_url  => 'https://sandbox6.onehourtranslation.com/oauth/authorize',
         :token_url      => 'https://sandbox6.onehourtranslation.com/api/2/oauth/token'
       }
@@ -40,38 +40,42 @@ module OmniAuth
         :param_name => 'access_token'
       }
 
-      # def request_phase
-      #   redirect client.auth_code.authorize_url(authorize_params)
-      # end
-      #
-      # def authorize_params
-      #   super.tap do |params|
-      #     params.merge!(:partner_uuid => options.client_id)
-      #   end
-      # end
-
+      # All this because OHT does not return token in a standard form
       def build_access_token
-        self.user_uuid = request.params['user_uuid']
+        self.account_uuid = request.params['user_uuid']
 
         params = {
-          :user_uuid => user_uuid,
+          :client_id => options.client_id,
+          :user_uuid => account_uuid,
           :public_key => options['public_key'],
           :secret_key => options['secret_key']
-        }
+        }.merge(token_params.to_hash(:symbolize_keys => true))
 
-        params = params.merge(token_params.to_hash(:symbolize_keys => true))
-        client.auth_code.get_token(request.params['code'], params, deep_symbolize(options.auth_token_params))
+        params = {'grant_type' => 'authorization_code', 'code' => request.params['code']}.merge(params)
+        access_token_opts = deep_symbolize(options.auth_token_params)
+
+        opts = {:raise_errors => false, :parse => params.delete(:parse)}
+        if client.options[:token_method] == :post
+          headers = params.delete(:headers)
+          opts[:body] = params
+          opts[:headers] =  {'Content-Type' => 'application/x-www-form-urlencoded'}
+          opts[:headers].merge!(headers) if headers
+        else
+          opts[:params] = params
+        end
+
+        response = client.request(client.options[:token_method], client.token_url, opts)
+        data = {
+            'access_token' => response.parsed['results']['access_token'],
+            'expires_in' => response.parsed['results']['expires'],
+        }
+        ::OAuth2::AccessToken.from_hash(client, data.merge(access_token_opts))
       end
 
       uid { raw_info['id'] }
       
       info do
-        prune!({
-          'id'             => raw_info['user_uuid'],
-          'first_name'     => raw_info['first_name'],
-          'last_name'      => raw_info['last_name'],
-          'email'          => raw_info['email']
-        })
+        prune!(raw_info['results'])
       end
       
       extra do 
@@ -81,13 +85,14 @@ module OmniAuth
       def raw_info
         @raw_info ||= begin
           params = {
-              :user_uuid => user_uuid,
-              :public_key => options['public_key'],
-              :secret_key => options['secret_key']
-          }.each{|key, value|  "#{key}=#{value}" }.join('&')
-          access_token.get("/v2/account?#{params}").parsed
-        end
+              :account_uuid => account_uuid,
+              :partner_uuid => options.client_id,
+              :public_key => options.public_key,
+              :secret_key => options.secret_key
+          }.collect{|key, value|  "#{key}=#{value}" }.join('&')
 
+          access_token.get("account?#{params}").parsed
+        end
       end
 
       private
