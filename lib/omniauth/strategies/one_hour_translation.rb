@@ -72,10 +72,10 @@ module OmniAuth
         ::OAuth2::AccessToken.from_hash(client, data.merge(access_token_opts))
       end
 
-      uid { raw_info['id'] }
+      uid { raw_info['uuid'] }
       
       info do
-        prune!(raw_info['results'])
+        prune!(raw_info)
       end
       
       extra do 
@@ -84,14 +84,20 @@ module OmniAuth
       
       def raw_info
         @raw_info ||= begin
-          params = {
-              :account_uuid => account_uuid,
-              :partner_uuid => options.client_id,
-              :public_key => options.public_key,
-              :secret_key => options.secret_key
-          }.collect{|key, value|  "#{key}=#{value}" }.join('&')
+          # params = {
+          #     :account_uuid => account_uuid
+          # }.collect{|key, value|  "#{key}=#{value}" }.join('&')
+          #
+          # pp params
+          #
+          # data = access_token.get("account?#{params}").parsed
+          #
+          # pp data
 
-          access_token.get("account?#{params}").parsed
+          # TODO: make a call to OHT to get the basic account information
+          {
+              'uuid' => account_uuid
+          }
         end
       end
 
