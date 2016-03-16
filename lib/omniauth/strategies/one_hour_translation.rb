@@ -36,7 +36,7 @@ module OmniAuth
       option :name, 'onehourtranslation'
 
       option :access_token_options, {
-        :header_format => 'OAuth %s',
+        :mode => :query,
         :param_name => 'access_token'
       }
 
@@ -69,6 +69,7 @@ module OmniAuth
             'access_token' => response.parsed['results']['access_token'],
             'expires_in' => response.parsed['results']['expires'],
         }
+
         ::OAuth2::AccessToken.from_hash(client, data.merge(access_token_opts))
       end
 
@@ -84,20 +85,12 @@ module OmniAuth
       
       def raw_info
         @raw_info ||= begin
-          # params = {
-          #     :account_uuid => account_uuid
-          # }.collect{|key, value|  "#{key}=#{value}" }.join('&')
-          #
-          # pp params
-          #
-          # data = access_token.get("account?#{params}").parsed
-          #
-          # pp data
-
-          # TODO: make a call to OHT to get the basic account information
-          {
+          access_token.options[:mode] = :query
+          access_token.options[:param_name] = :access_token
+          data = access_token.get('account/contact', {:parse => :json}).parsed
+          data['results'].merge({
               'uuid' => account_uuid
-          }
+          })
         end
       end
 
