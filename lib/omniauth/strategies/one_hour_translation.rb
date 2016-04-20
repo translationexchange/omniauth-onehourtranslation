@@ -28,9 +28,9 @@ module OmniAuth
       attr_accessor :account_uuid
 
       option :client_options, {
-        :site           => 'https://sandbox6.onehourtranslation.com/api/2/',
-        :authorize_url  => 'https://sandbox6.onehourtranslation.com/oauth/authorize',
-        :token_url      => 'https://sandbox6.onehourtranslation.com/api/2/oauth/token'
+        :site           => 'https://www.onehourtranslation.com/api/2/',
+        :authorize_url  => 'https://www.onehourtranslation.com/oauth/authorize',
+        :token_url      => 'https://www.onehourtranslation.com/api/2/oauth/token'
       }
 
       option :name, 'onehourtranslation'
@@ -39,6 +39,9 @@ module OmniAuth
         :mode => :query,
         :param_name => 'access_token'
       }
+
+
+      # TODO: deal with situations when client declines the authorization
 
       # All this because OHT does not return token in a standard form
       def build_access_token
