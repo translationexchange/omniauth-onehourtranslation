@@ -30,9 +30,9 @@ module OmniAuth
       # TODO: remove this check once the servers are switched
       if defined?(Rails) and %w(test sandbox development dev).include?(Rails.env.to_s)
         option :client_options, {
-          :site           => 'https://sandbox6.onehourtranslation.com/api/2/',
-          :authorize_url  => 'https://sandbox6.onehourtranslation.com/oauth/authorize',
-          :token_url      => 'https://sandbox6.onehourtranslation.com/api/2/oauth/token'
+          :site           => 'https://sandbox.onehourtranslation.com/api/2/',
+          :authorize_url  => 'https://sandbox.onehourtranslation.com/oauth/authorize',
+          :token_url      => 'https://sandbox.onehourtranslation.com/api/2/oauth/token'
         }
       else
         option :client_options, {
